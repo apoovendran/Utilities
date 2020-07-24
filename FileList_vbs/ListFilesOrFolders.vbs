@@ -1,27 +1,49 @@
 '------------------------------------------------------------------------------------------
-'Name	:	ListFilesOrfolders_0.1.vbs
-'Desc	:	List files and folders in csv
-'Remarks:	ListFilesOrFolders - is the entry point
-'			Parameter 1 - Path to list the files or folders eg : C:\tmp
-'			Parameter 2	- If only folder List give "Folder"
-'						- If Folders and Files -  then "Files"
-'Output	:	It will return Output.csv file in the same folder
+'Name	:	ListFilesOrfolders.vbs
+'Desc	:	List files and folders in txt - open in excel "/" delimited 
+'Date	:	01 Feb 2014
+'Remarks:	strPath and FileOrFolder to be given
+
+	'------------------------------------------------------------------------------------------
+'Version:	1.1
+'			a) .svn folders removed from listing
+'			b) comma used in folders so delimiter changed to "/"
+'			c) File extension added in FileCnt column
+	'------------------------------------------------------------------------------------------
+
 '------------------------------------------------------------------------------------------
 
+Dim strPath
+Dim FileOrFolder
 
+strPath = "C:\Poov\Cloud\"
+FileOrFolder = "Files"
+' FileOrFolder = "Folder"
+
+'------------------------------------------------------------------------------------------
+
+Dim OutputFileName
 Dim fso,RecCnt
 Dim ObjOutFile
 
-Set fso = CreateObject("Scripting.FileSystemObject") 
-Set ObjOutFile = fso.CreateTextFile("E_2TB.csv") 
-RecCnt = 0
-ObjOutFile.WriteLine("RecCnt,Folder,File,Size,CreatedOn,DateLastModified,DateLastAccessed,FileCnt") 
-RecCnt = RecCnt+1
-ObjOutFile.WriteLine(RecCnt & ",E:\2TB") 
-Call ListFilesOrFolders("E:\2TB", "Folder")
+OutputFileName = Replace(strPath & FileOrFolder ,":","_")
+OutputFileName = Replace(OutputFileName ,"\","_")
+OutputFileName = OutputFileName & ".txt"
 
+on error resume next
+
+Set fso = CreateObject("Scripting.FileSystemObject") 
+Set ObjOutFile = fso.CreateTextFile(OutputFileName) 
+RecCnt = 0
+ObjOutFile.WriteLine("RecCnt~Folder~File~Size~CreatedOn~DateLastModified~DateLastAccessed~FileCnt") 
+RecCnt = RecCnt+1
+ObjOutFile.WriteLine(RecCnt & "~" & strPath) 
+
+Call ListFilesOrFolders(strPath, FileOrFolder)
 
 Function ListFilesOrFolders(strTopFolder, FolderOrFiles)
+
+on error resume next
 	Dim ObjFolder, bFirstTimeEntry
 	Set ObjFolder = fso.GetFolder(strTopFolder) 
 	
@@ -32,22 +54,28 @@ Function ListFilesOrFolders(strTopFolder, FolderOrFiles)
 	
 	Dim ofldr
 	For Each ofldr in ObjSubFolders
-		Set objFiles = ofldr.Files  
-		RecCnt = RecCnt+1
-		ObjOutFile.WriteLine(RecCnt & "," & ofldr.path & ",Folder," &  ofldr.Size & "," & ofldr.DateCreated & "," & ofldr.DateLastModified & "," & ofldr.DateLastAccessed & "," & objFiles.Count)
-		If FolderOrFiles = "Files" then
-			Call ListFiles(ofldr)
+		if InStr(1,ofldr,".svn") > 0  then
+			'do nothing
+		else
+	
+			Set objFiles = ofldr.Files  
+			RecCnt = RecCnt+1
+			ObjOutFile.WriteLine(RecCnt & "~" & ofldr.path & "~Folder~" &  ofldr.Size & "~" & ofldr.DateCreated & "~" & ofldr.DateLastModified & "~" & ofldr.DateLastAccessed & "~" & objFiles.Count)
+			If FolderOrFiles = "Files" then
+				Call ListFiles(ofldr)
+			end if
+			call ListFilesOrFolders(ofldr, FolderOrFiles)
 		end if
-		call ListFilesOrFolders(ofldr, FolderOrFiles)
 	Next
 End Function
 
 Function ListFiles(objFolder)
+on error resume next
 	Dim objFiles
 	Set objFiles = objFolder.Files  
 	For each folderIdx In objFiles  
 		RecCnt = RecCnt+1
-		ObjOutFile.WriteLine(RecCnt & "," & folderIdx.path & ",File," &  folderIdx.Size & "," & folderIdx.DateCreated & "," & folderIdx.DateLastModified & "," & folderIdx.DateLastAccessed)
+		ObjOutFile.WriteLine(RecCnt & "~" & folderIdx.path & "~File~" &  folderIdx.Size & "~" & folderIdx.DateCreated & "~" & folderIdx.DateLastModified & "~" & folderIdx.DateLastAccessed & "~" &  fso.GetExtensionName(folderIdx.path))
 	Next
 
 End Function
